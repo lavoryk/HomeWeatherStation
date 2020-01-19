@@ -1,6 +1,12 @@
 #include <WebServerImpl.h>
-#include <WebServer.h>
-WebServer server(80);
+#if defined ESP32
+  #include <WebServer.h>
+  WebServer server(80);
+#elif defined ESP8266
+  #include <ESP8266WebServer.h>
+  ESP8266WebServer server(80);
+#endif
+
 namespace 
 {
   // const WeatherSensor* _pWeatherSensor = nullptr;

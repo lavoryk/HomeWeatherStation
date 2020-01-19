@@ -2,32 +2,32 @@
 #include <Wire.h>
 #include <hd44780.h>
 #include <hd44780ioClass/hd44780_I2Cexp.h>
+#if defined ESP32
+  #include <WiFi.h>
+  #define configTime4Project configTzTime
+  TaskHandle_t Task1;
+  void Task1code(void * parameter);
+#elif defined ESP8266
+  #include <ESP8266WiFi.h>
+  #define configTime4Project configTime
+#endif
 
-#include <WiFi.h>
-#include <FS.h>
-#include <SD.h>
-#include <time.h>
+#ifdef USE_SD
+  #include <SD.h>
+  #include <FS.h>
+#endif
 
 #include "WebServerImpl.h"
 #include "Utilities.h"
 #include "WifiConfig.h"
 #include <WeatherSensor.h>
 
-#define SEALEVELPRESSURE_HPA (1013.25)
-
 WeatherSensor weatherSensor;
 hd44780_I2Cexp lcd(0x27, 20, 4);
 
-TaskHandle_t Task1;
-
 const char* ssid = YOUR_WIFI_SSID;
 const char* password = YOUR_WIFI_PASSWD;
-
-void Task1code(void * parameter);
-
 const char* ntpServer = "pool.ntp.org";
-const long  gmtOffset_sec = 2 * 3600;
-const int   daylightOffset_sec = 3600;
 
 void setup() 
 {
@@ -53,13 +53,15 @@ void setup()
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
   
-  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  // Kyiv time zone
+  configTime4Project("UTC-02DST+01", ntpServer);
 
   SetUpWebServer(&weatherSensor);
 
   lcd.on();
   lcd.clear();
 
+#if defined ESP32
   xTaskCreatePinnedToCore(
       Task1code, /* Function to implement the task */
       "Task1", /* Name of the task */
@@ -68,7 +70,9 @@ void setup()
       0,  /* Priority of the task */
       &Task1,  /* Task handle. */
       0); /* Core where the task should run */
+#endif
 
+#ifdef USE_SD
     if(!SD.begin()){
         Serial.println("Card Mount Failed");
         return;
@@ -90,19 +94,17 @@ void setup()
     } else {
         Serial.println("UNKNOWN");
     }
+    #endif
 }
 
-void Task1code(void * parameter)
+void HandleSensorsAndLCD()
 {
-  Serial.print("Task1 running on core ");
-  Serial.println(xPortGetCoreID());
-  unsigned long nextWeatherDataUpdate = 0u;
-  unsigned long nextTimeUpdate = 0u;
-  bool print2Console = false;
-  auto localIp = WiFi.localIP().toString();
-  while (true)
-  {
-    print2Console = false;
+  // Initialize one time
+    static unsigned long nextWeatherDataUpdate = 0u;
+    static unsigned long nextTimeUpdate = 0u;
+    static bool print2Console = false;
+    static auto localIp = WiFi.localIP().toString();
+
     auto timePass = millis();
     if (nextWeatherDataUpdate < timePass)
     {
@@ -117,10 +119,25 @@ void Task1code(void * parameter)
       nextTimeUpdate += 1000u;
       PrintValues(weatherSensor, lcd, localIp, print2Console, timePass / 1000);
     }
+}
+
+#if defined ESP32
+// core 2
+void Task1code(void * parameter)
+{
+  Serial.print("Task1 running on core ");
+  Serial.println(xPortGetCoreID());
+  while (true)
+  {
+    HandleSensorsAndLCD();
   }
 }
+#endif
 
 void loop() // core 1
 {
   HandleWebServerClient();
+#if defined ESP8266
+  HandleSensorsAndLCD();
+#endif
 }

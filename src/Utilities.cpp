@@ -3,6 +3,8 @@
 #include <Wire.h>
 #include <time.h>
 
+#define SEALEVELPRESSURE_HPA (1013.25)
+
 void PrintEmpty(Print&print, unsigned int count)
 {
     if (count > 0)
@@ -42,9 +44,6 @@ void PrintValues(const WeatherSensor& weatherSensor, hd44780& lcd, const String&
     Serial.println();
   }
 
-  // lcd.setCursor(0, 0);
-  // lcd.print("Temp*C|Hum % |P hPa ");
-
   char line[64] = {0};
   sprintf(line, "T%+5.1f H%4.1f P%6.1f ", temperature, humidity, pressure);
   line[21] = 0;
@@ -52,16 +51,19 @@ void PrintValues(const WeatherSensor& weatherSensor, hd44780& lcd, const String&
   lcd.print(line);
   
   lcd.setCursor(0, 1);
-  // TODO: Optimize
-  struct tm timeinfo;
-  if(!getLocalTime(&timeinfo)){
-    Serial.println("Failed to obtain time");
-    
+  time_t rawtime;
+  time (&rawtime);
+  struct tm* timeinfo = localtime (&rawtime);
+  size_t written = strftime(line, 64, "%H:%M:%S", timeinfo);
+  if(written == 0)
+  {
+      lcd.print("strftime error");
   }
   else
   {
-    lcd.print(&timeinfo, "%H:%M:%S");
+    lcd.print(line);
   }
+  
   sprintf(line, "  %02d:%02d:%02d", uptimeSeconds / 3600, (uptimeSeconds % 3600) / 60, uptimeSeconds % 60);
   lcd.print(line);
   
