@@ -17,7 +17,7 @@ void PrintEmpty(Print&print, unsigned int count)
     } 
 }
 
-void PrintValues(const WeatherSensor& weatherSensor, hd44780& lcd, const String& localIp, bool print2Console, int uptimeSeconds)
+void PrintValues(const WeatherSensor& weatherSensor, hd44780& lcd, const String& localIp, bool updateWeatherData, int uptimeSeconds)
 {
   float temperature = weatherSensor.GetTemperature();
   float pressure = weatherSensor.GetPressure();
@@ -28,7 +28,7 @@ void PrintValues(const WeatherSensor& weatherSensor, hd44780& lcd, const String&
 
   float humidity = weatherSensor.GetHumidity();
 
-  if (print2Console)
+  if (updateWeatherData)
   {
     Serial.print("Temperature = ");
     Serial.print(temperature);
@@ -45,10 +45,14 @@ void PrintValues(const WeatherSensor& weatherSensor, hd44780& lcd, const String&
   }
 
   char line[64] = {0};
-  sprintf(line, "T%+5.1f H%4.1f P%6.1f ", temperature, humidity, pressure);
-  line[21] = 0;
-  lcd.setCursor(0, 0);
-  lcd.print(line);
+
+  if (updateWeatherData)
+  {
+    sprintf(line, "T%+5.1f H%4.1f P%6.1f ", temperature, humidity, pressure);
+    line[21] = 0;
+    lcd.setCursor(0, 0);
+    lcd.print(line);
+  }
   
   lcd.setCursor(0, 1);
   time_t rawtime;
@@ -66,12 +70,14 @@ void PrintValues(const WeatherSensor& weatherSensor, hd44780& lcd, const String&
   
   sprintf(line, "  %02d:%02d:%02d", uptimeSeconds / 3600, (uptimeSeconds % 3600) / 60, uptimeSeconds % 60);
   lcd.print(line);
-  
-  lcd.setCursor(0, 2);
-  lcd.print("-Hello world-");
+  if (updateWeatherData)
+  {
+    lcd.setCursor(0, 2);
+    lcd.print("-Hello world-");
 
-  // WiFi
-  lcd.setCursor(0, 3);
-  lcd.print(localIp);
-  PrintEmpty(lcd, 20 - localIp.length());
+    // WiFi
+    lcd.setCursor(0, 3);
+    lcd.print(localIp);
+    PrintEmpty(lcd, 20 - localIp.length());
+  }
 }

@@ -102,14 +102,14 @@ void HandleSensorsAndLCD()
   // Initialize one time
     static unsigned long nextWeatherDataUpdate = 0u;
     static unsigned long nextTimeUpdate = 0u;
-    static bool print2Console = false;
+    static bool updateWeatherData = false;
     static auto localIp = WiFi.localIP().toString();
 
     auto timePass = millis();
     if (nextWeatherDataUpdate < timePass)
     {
       nextWeatherDataUpdate += 10000u;
-      print2Console = true;
+      updateWeatherData = true;
       localIp = WiFi.localIP().toString();
       weatherSensor.ReadWeatherSersor();
     }
@@ -117,7 +117,8 @@ void HandleSensorsAndLCD()
     if (nextTimeUpdate < timePass)
     {
       nextTimeUpdate += 1000u;
-      PrintValues(weatherSensor, lcd, localIp, print2Console, timePass / 1000);
+      PrintValues(weatherSensor, lcd, localIp, updateWeatherData, timePass / 1000);
+      updateWeatherData = false;
     }
 }
 

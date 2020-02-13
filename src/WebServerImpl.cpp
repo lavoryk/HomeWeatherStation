@@ -17,7 +17,13 @@ void handleRoot()
   server.send(200, "text/html", 
   "<html>\n"
   "<body>\n"
+  #if defined ESP8266
   "hello from esp8266!</br>\n"
+  #elif defined ESP32
+  "hello from esp32!</br>\n"
+  #else
+  "hello from unknow!</br>\n"
+  #endif
   "Api:</br>\n"
   "<a href='/temperature'>/temperature</a></br>\n"
   "<a href='/pressure'>/pressure</a></br>\n"
