@@ -9,11 +9,22 @@
 
 namespace 
 {
-  // const WeatherSensor* _pWeatherSensor = nullptr;
+  
 }
+
 void handleRoot() 
 {
-  server.send(200, "text/plain", "hello from esp8266!");
+  server.send(200, "text/html", 
+  "<html>\n"
+  "<body>\n"
+  "hello from esp8266!</br>\n"
+  "Api:</br>\n"
+  "<a href='/temperature'>/temperature</a></br>\n"
+  "<a href='/pressure'>/pressure</a></br>\n"
+  "<a href='/humidity'>/humidity</a></br>\n"
+  "</body>\n"
+  "</html>\n"
+  );
 }
 
 void handleNotFound() 
@@ -35,7 +46,6 @@ void handleNotFound()
 
 void SetUpWebServer(const WeatherSensor* pWeatherSensor)
 {
-  // _pWeatherSensor = pWeatherSensor;
   server.on("/", handleRoot);
 
   server.on("/inline", []() 
