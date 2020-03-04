@@ -21,6 +21,7 @@
 #include "Utilities.h"
 #include "WifiConfig.h"
 #include <WeatherSensor.h>
+#include <Currency.h>
 
 WeatherSensor weatherSensor;
 hd44780_I2Cexp lcd(0x27, 20, 4);
@@ -95,6 +96,8 @@ void setup()
         Serial.println("UNKNOWN");
     }
     #endif
+    Currency currency;
+    currency.ReadCurrency();
 }
 
 void HandleSensorsAndLCD()
