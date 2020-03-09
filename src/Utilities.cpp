@@ -17,7 +17,7 @@ void PrintEmpty(Print&print, unsigned int count)
     } 
 }
 
-void PrintValues(const WeatherSensor& weatherSensor, hd44780& lcd, const String& localIp, bool updateWeatherData, int uptimeSeconds)
+void PrintValues(const WeatherSensor& weatherSensor, const Currency& currency, hd44780& lcd, const String& localIp, bool updateWeatherData, bool updateCurrencyData, int uptimeSeconds)
 {
   float temperature = weatherSensor.GetTemperature();
   float pressure = weatherSensor.GetPressure();
@@ -70,11 +70,14 @@ void PrintValues(const WeatherSensor& weatherSensor, hd44780& lcd, const String&
   
   sprintf(line, "  %02d:%02d:%02d", uptimeSeconds / 3600, (uptimeSeconds % 3600) / 60, uptimeSeconds % 60);
   lcd.print(line);
-  if (updateWeatherData)
+  if (updateCurrencyData)
   {
     lcd.setCursor(0, 2);
-    lcd.print("-Hello world-");
-
+    sprintf(line, "N%5.2f P%5.2f/%5.2f", currency.GetExchangeRate24SaleRateNB(), currency.GetExchangeRate24PurchaseRate(), currency.GetExchangeRate24SaleRate());
+    lcd.print(line);
+  }
+  if (updateWeatherData)
+  {
     // WiFi
     lcd.setCursor(0, 3);
     lcd.print(localIp);

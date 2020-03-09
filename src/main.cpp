@@ -23,6 +23,7 @@
 #include <WeatherSensor.h>
 #include <Currency.h>
 
+Currency currency;
 WeatherSensor weatherSensor;
 hd44780_I2Cexp lcd(0x27, 20, 4);
 
@@ -96,15 +97,14 @@ void setup()
         Serial.println("UNKNOWN");
     }
     #endif
-    Currency currency;
-    currency.ReadCurrency();
 }
 
 void HandleSensorsAndLCD()
 {
   // Initialize one time
     static unsigned long nextWeatherDataUpdate = 0u;
-    static unsigned long nextTimeUpdate = 0u;
+    static unsigned long nextLcdDataUpdate = 0u;
+    static unsigned long nextCurrencyDataUpdate = 5000u;
     static bool updateWeatherData = false;
     static auto localIp = WiFi.localIP().toString();
 
@@ -116,12 +116,18 @@ void HandleSensorsAndLCD()
       localIp = WiFi.localIP().toString();
       weatherSensor.ReadWeatherSersor();
     }
-    
-    if (nextTimeUpdate < timePass)
+
+    if (nextLcdDataUpdate < timePass)
     {
-      nextTimeUpdate += 1000u;
-      PrintValues(weatherSensor, lcd, localIp, updateWeatherData, timePass / 1000);
+      nextLcdDataUpdate += 1000u;
+      PrintValues(weatherSensor, currency, lcd, localIp, updateWeatherData, true, timePass / 1000);
       updateWeatherData = false;
+    }
+
+    if (nextCurrencyDataUpdate < timePass)
+    {
+      nextCurrencyDataUpdate += 60000u;
+      currency.ReadCurrency();
     }
 }
 

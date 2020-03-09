@@ -8,11 +8,10 @@ using namespace BearSSL;
 #endif
 
 #include <WiFiClient.h>
+#include <ArduinoJson.h>
 
 void Currency::ReadCurrency()
 {
-  // https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266WiFi/examples/BearSSL_CertStore
-  const uint8_t fingerprint[20] = {0x98, 0xC6, 0xA8, 0xDC, 0x88, 0x79, 0x63, 0xBA, 0x3C, 0xF9, 0xC2, 0x73, 0x1C, 0xBD, 0xD3, 0xF7, 0xDE, 0x05, 0xAC, 0x2D};
   const char* rootCACertificate = R"EOF(
 -----BEGIN CERTIFICATE-----
 MIIEsTCCA5mgAwIBAgIQCKWiRs1LXIyD1wK0u6tTSTANBgkqhkiG9w0BAQsFADBh
@@ -46,19 +45,27 @@ TVyMnGo=
 
     // WiFiClient client;    
     std::unique_ptr<WiFiClientSecure> client(new WiFiClientSecure);
-    // client->setFingerprint(fingerprint);
-    // client->setInsecure();
 #if defined ESP32
     client->setCACert(rootCACertificate);
 #elif defined ESP8266
-    // BearSSL::X509List cert(rootCACertificate);
-    // client->setTrustAnchors(&cert);
-    client->setFingerprint(fingerprint);
+    BearSSL::X509List cert(rootCACertificate);
+    client->setTrustAnchors(&cert);
 #endif
 
     HTTPClient http;
     Serial.print("[HTTP] begin...\n");
-    if (http.begin(*client, "https://api.privatbank.ua/p24api/exchange_rates?json&date=02.03.2020"))
+    char line[64] = {0};
+    {
+      time_t rawtime;
+      time (&rawtime);
+      struct tm* timeinfo = localtime (&rawtime);
+      strftime(line, 64, "%d.%m.%Y", timeinfo);
+    }
+    String request = "https://api.privatbank.ua/p24api/exchange_rates?json&date=";
+    request += line;
+    Serial.print("[HTTP] ");
+    Serial.println(request);
+    if (http.begin(*client, request))
     {
       Serial.print("[HTTP] GET...\n");
       // start connection and send HTTP header
@@ -72,7 +79,26 @@ TVyMnGo=
         if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) 
         {
           String payload = http.getString();
-          Serial.println(payload);
+          Serial.print("legnth : ");
+          Serial.println(payload.length());
+          // Serial.println(payload);
+          {
+            // https://arduinojson.org/v6/assistant/
+            const size_t capacity = JSON_ARRAY_SIZE(26) + JSON_OBJECT_SIZE(3) + 18*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + 7*JSON_OBJECT_SIZE(6) + 1860;
+            DynamicJsonDocument doc(capacity);
+            deserializeJson(doc, payload);
+            JsonArray exchangeRate = doc["exchangeRate"];
+            JsonObject exchangeRate_24 = exchangeRate[24];
+            // const char* exchangeRate_24_baseCurrency = exchangeRate_24["baseCurrency"]; // "UAH"
+            // const char* exchangeRate_24_currency = exchangeRate_24["currency"]; // "USD"
+            exchangeRate_24_saleRateNB = exchangeRate_24["saleRateNB"];
+            exchangeRate_24_purchaseRateNB = exchangeRate_24["purchaseRateNB"];
+            exchangeRate_24_saleRate = exchangeRate_24["saleRate"];
+            exchangeRate_24_purchaseRate = exchangeRate_24["purchaseRate"];
+            sprintf(line, "NB%5.2f PV%5.2f/%5.2f", exchangeRate_24_saleRateNB, exchangeRate_24_purchaseRate, exchangeRate_24_saleRate);
+            Serial.println(line);
+          }
+          
         }
       } 
       else 
