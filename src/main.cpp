@@ -55,8 +55,9 @@ void setup()
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
   
-  // Kyiv time zone
-  configTime4Project("UTC-02DST+01", ntpServer);
+  // Kyiv time zone (Europe/Kiev): https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
+  // https://github.com/G6EJD/ESP32-Time-Services-and-SETENV-variable
+  configTime4Project("EET-2EEST,M3.5.0/3,M10.5.0/4", ntpServer);
 
   SetUpWebServer(&weatherSensor);
 
