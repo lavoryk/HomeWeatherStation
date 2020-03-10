@@ -55,6 +55,7 @@ TVyMnGo=
     HTTPClient http;
     Serial.print("[HTTP] begin...\n");
     char line[64] = {0};
+#if 0
     {
       time_t rawtime;
       time (&rawtime);
@@ -63,6 +64,8 @@ TVyMnGo=
     }
     String request = "https://api.privatbank.ua/p24api/exchange_rates?json&date=";
     request += line;
+#endif
+    String request = "https://api.privatbank.ua/p24api/pubinfo?json&exchange&coursid=5";
     Serial.print("[HTTP] ");
     Serial.println(request);
     if (http.begin(*client, request))
@@ -84,21 +87,30 @@ TVyMnGo=
           // Serial.println(payload);
           {
             // https://arduinojson.org/v6/assistant/
-            const size_t capacity = JSON_ARRAY_SIZE(26) + JSON_OBJECT_SIZE(3) + 18*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + 7*JSON_OBJECT_SIZE(6) + 1860;
+            const size_t capacity = JSON_ARRAY_SIZE(4) + 4*JSON_OBJECT_SIZE(4) + 220;
             DynamicJsonDocument doc(capacity);
             deserializeJson(doc, payload);
-            JsonArray exchangeRate = doc["exchangeRate"];
-            JsonObject exchangeRate_24 = exchangeRate[24];
-            // const char* exchangeRate_24_baseCurrency = exchangeRate_24["baseCurrency"]; // "UAH"
-            // const char* exchangeRate_24_currency = exchangeRate_24["currency"]; // "USD"
-            exchangeRate_24_saleRateNB = exchangeRate_24["saleRateNB"];
-            exchangeRate_24_purchaseRateNB = exchangeRate_24["purchaseRateNB"];
-            exchangeRate_24_saleRate = exchangeRate_24["saleRate"];
-            exchangeRate_24_purchaseRate = exchangeRate_24["purchaseRate"];
-            sprintf(line, "NB%5.2f PV%5.2f/%5.2f", exchangeRate_24_saleRateNB, exchangeRate_24_purchaseRate, exchangeRate_24_saleRate);
-            Serial.println(line);
+            for (size_t i = 0; i < doc.size(); ++i)
+            {
+              JsonObject root_0 = doc[i];
+              if (root_0.containsKey("ccy") && strcmp(root_0["ccy"], "USD") == 0)
+              {
+                exchangeRate_24_saleRateNB = 0.0f;
+                exchangeRate_24_purchaseRateNB = 0.0f;
+                if (root_0.containsKey("sale"))
+                {
+                  exchangeRate_24_saleRate = root_0["sale"];
+                }
+                if (root_0.containsKey("buy"))
+                {
+                  exchangeRate_24_purchaseRate = root_0["buy"];
+                }
+                sprintf(line, "NB%5.2f PV%5.2f/%5.2f", exchangeRate_24_saleRateNB, exchangeRate_24_purchaseRate, exchangeRate_24_saleRate);
+                Serial.println(line);
+                break;
+              }
+            }
           }
-          
         }
       } 
       else 
