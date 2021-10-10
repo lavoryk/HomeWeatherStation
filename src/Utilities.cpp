@@ -51,12 +51,12 @@ void PrintValues(
     Serial.println();
   }
 
-  char line[64] = {0};
+  char line[32] = {0};
 
   if (updateWeatherData)
   {
     sprintf(line, "T%+5.1f H%4.1f P%6.1f ", temperature, humidity, pressure);
-    line[21] = 0;
+    line[20] = 0;
     lcd.setCursor(0, 0);
     lcd.print(line);
   }

@@ -133,22 +133,25 @@ void HandleSensorsAndLCD()
 }
 
 #if defined ESP32
-// core 2
-void Task1code(void * parameter)
+void Task1code(void * parameter) // core 0
 {
   Serial.print("Task1 running on core ");
   Serial.println(xPortGetCoreID());
   while (true)
   {
-    HandleSensorsAndLCD();
+    HandleWebServerClient();
   }
 }
 #endif
 
 void loop() // core 1
 {
-  HandleWebServerClient();
+  // Serial.print("Loop running on core ");
+  // Serial.println(xPortGetCoreID());
+  // delay(1000);
+  // Alway process SensorsAndLCD in loop() function, core 1
+  HandleSensorsAndLCD(); 
 #if defined ESP8266
-  HandleSensorsAndLCD();
+  HandleWebServerClient();
 #endif
 }
